@@ -1,7 +1,7 @@
 // Token Radar's entrypoint (Node 22, standard library only).
 //
 // Reads the sealed snapshot from /input/snapshot.json (or --input
-// <file|dir>), fits the radar-2 model in lib/model.ts, writes the ranked
+// <file|dir>), fits the radar-3 model in lib/model.ts, writes the ranked
 // board to /output/board.json, writes the dashboard's data beside the page
 // as data.js, copies this repository's dashboard/ and screenshots/ to
 // /output, and writes /output/dossier.json with the vendored make.fun
@@ -82,7 +82,15 @@ for (const name of shots) {
 // The dossier is written last: the scorer rebuilds it from this /output and compares bytes.
 writeFileSync(join(out, 'dossier.json'), buildDossier(out, { text_max_bytes: TEXT_MAX_BYTES, screenshots: SCREENSHOT_CAPS, dashboard: { max_files: 400, max_bytes: 4_194_304 } }));
 
+const m = radar.model;
+const h = m.heldout.mean;
 process.stdout.write(
   `token radar: ${snapshot.protocols.length} protocols, ${snapshot.watchlist.length} on the watchlist, ${board.length} rows scored (${radar.early_size} early, ${radar.live_size} live set aside)\n` +
+    `token radar: integrity ${radar.integrity.scanned} scanned = ${radar.integrity.ranked} ranked + ${radar.integrity.excluded} excluded pre-token + ${radar.integrity.traded} traded\n` +
+    `token radar: verdicts FARM ${radar.kpis.farm} / THIN ${radar.kpis.thin} / SKIP ${radar.kpis.skip}\n` +
+    `token radar: size curve ln(mcap) = ${m.intercept} + ${m.slope} * ln(tvl), R2 ${m.r2}, ${m.comps} comps\n` +
+    `token radar: joint fit growth ${m.joint_growth_per_pt}/pt, age ${m.joint_age_per_year}/yr, R2 ${m.joint_r2}\n` +
+    `token radar: token odds logit age ${m.logit_age_per_year}/yr, logTVL ${m.logit_log_tvl}, growth ${m.logit_growth_per_pt}/pt\n` +
+    `token radar: held-out median |log error| radar-3 ${h.radar3} vs v1 ${h.v1_formula} vs flat ${h.flat} (folds ${m.heldout.folds.map((f) => `${f.fold}:${f.radar3}/${f.v1_formula}/${f.flat}`).join(' ')})\n` +
     `token radar: wrote ${join(out, 'board.json')}, ${join(out, 'data.js')}, ${join(out, 'dashboard')} (${readdirSync(join(out, 'dashboard')).length} files), ${join(out, 'screenshots')} (${shots.length} images) and ${join(out, 'dossier.json')}\n`,
 );
